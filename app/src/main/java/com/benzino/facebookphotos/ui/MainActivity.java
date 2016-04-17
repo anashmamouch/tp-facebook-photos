@@ -7,6 +7,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 
 import com.benzino.facebookphotos.R;
+import com.benzino.facebookphotos.model.Album;
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;
@@ -29,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         callbackManager = CallbackManager.Factory.create();
+
+        //updateWithToken(AccessToken.getCurrentAccessToken());
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -68,14 +71,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.v("ANAS", profile.getFirstName());
                 }
 
-//                if (profile != null){
-//                    Intent intent = new Intent(MainActivity.this, AlbumsActivity.class);
-//                    intent.putExtra("NAME", profile.getName());
-//                    startActivity(intent);
-//                    Log.d("ANAS", profile.getFirstName());
-//                }
-
-
                 Log.d("ANAS", "Login Succeded");
             }
 
@@ -97,5 +92,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         callbackManager.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void updateWithToken(AccessToken currentAccessToken){
+        if (currentAccessToken != null){
+            startActivity(new Intent(MainActivity.this, AlbumsActivity.class));
+            finish();
+        }else {
+
+        }
     }
 }

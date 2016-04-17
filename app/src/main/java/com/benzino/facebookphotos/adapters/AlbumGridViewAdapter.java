@@ -1,6 +1,7 @@
 package com.benzino.facebookphotos.adapters;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +11,8 @@ import android.widget.TextView;
 
 import com.benzino.facebookphotos.R;
 import com.benzino.facebookphotos.model.Album;
+import com.benzino.facebookphotos.ui.AlbumsActivity;
+import com.benzino.facebookphotos.ui.PhotosActivity;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
@@ -71,8 +74,6 @@ public class AlbumGridViewAdapter extends ArrayAdapter {
             holder = (ViewHolder) row.getTag();
         }
 
-        /*Sorting data by name*/
-        Collections.sort(data, ComparatorByName);
 
         final Album album = data.get(position);
 
@@ -84,22 +85,18 @@ public class AlbumGridViewAdapter extends ArrayAdapter {
             @Override
             public void onClick(View v) {
                 String id = album.getId();
+                String name = album.getTitle();
+                Intent intent = new Intent(context, PhotosActivity.class);
+                intent.putExtra("ALBUM ID", id);
+                intent.putExtra("ALBUM NAME", name);
+                context.startActivity(intent);
             }
         });
-
 
         return row;
     }
 
-    public Comparator<Album> ComparatorByName = new Comparator<Album>() {
-        @Override
-        public int compare(Album album1, Album album2) {
-            if (album1.getTitle().equals(album2.getTitle())){
-                return 0;
-            }
-            return album1.getTitle().compareTo(album2.getTitle());
-        }
-    };
+
 
     @Override
     public int getCount() {

@@ -68,11 +68,14 @@ public class AlbumsActivity extends AppCompatActivity {
     }
 
     private void getAlbumsFB(){
+        Bundle parameters = new Bundle();
+        parameters.putString("fields", "id,name,picture.type(album)");
+
         /* make the API call */
-        GraphRequest request = new GraphRequest(
+        new GraphRequest(
                 AccessToken.getCurrentAccessToken(),
                 "/me/albums",
-                null,
+                parameters,
                 HttpMethod.GET,
                 new GraphRequest.Callback() {
                     public void onCompleted(GraphResponse response) {
@@ -104,13 +107,8 @@ public class AlbumsActivity extends AppCompatActivity {
                         }
                     }
                 }
-        );
+        ).executeAsync();
 
-        Bundle parameters = new Bundle();
-        parameters.putString("fields", "id,name,picture.type(album)");
-
-        request.setParameters(parameters);
-        request.executeAsync();
     }
 
 }

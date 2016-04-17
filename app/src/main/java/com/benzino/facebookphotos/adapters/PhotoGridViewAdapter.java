@@ -37,6 +37,8 @@ public class PhotoGridViewAdapter extends ArrayAdapter {
         this.context = context;
         this.layoutResourceId = layoutResourceId;
         this.data = data;
+
+        mCheckStates = new SparseBooleanArray(data.size());
     }
 
     @Override
@@ -73,12 +75,16 @@ public class PhotoGridViewAdapter extends ArrayAdapter {
             }
         });
 
+        /**
+
         holder.fullscreenIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                /*go to details page*/
+                //go to details page
             }
         });
+
+        **/
 
         holder.checkBox.setTag(position);
         holder.checkBox.setChecked(mCheckStates.get(position, true));
@@ -93,6 +99,11 @@ public class PhotoGridViewAdapter extends ArrayAdapter {
         });
 
         return row;
+    }
+
+    @Override
+    public int getCount() {
+        return data.size();
     }
 
     static class ViewHolder {
