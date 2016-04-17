@@ -1,5 +1,6 @@
 package com.benzino.facebookphotos.ui;
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -12,6 +13,8 @@ import com.benzino.facebookphotos.R;
 import com.benzino.facebookphotos.adapters.AlbumGridViewAdapter;
 import com.benzino.facebookphotos.adapters.PhotoGridViewAdapter;
 import com.benzino.facebookphotos.model.Photo;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.facebook.AccessToken;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
@@ -21,8 +24,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 16/4/16.
@@ -39,9 +46,9 @@ public class PhotosActivity extends AppCompatActivity {
     final String[] afterString = {""};  // will contain the next page cursor
 
     List<Photo> photos;
+    private ProgressDialog progressDialog;
 
-
-
+    Cloudinary cloudinary;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -66,6 +73,15 @@ public class PhotosActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         setTitle(getIntent().getStringExtra("ALBUM NAME"));
+
+        /*Cloudinary configuration*/
+
+
+        Map config = new HashMap();
+        config.put("cloud_name", "dc0x6smxj");
+        config.put("api_key", "535846596164154");
+        config.put("api_secret", "gMZRqFsTySrrFEX4o-dYMJt8p3o");
+        cloudinary = new Cloudinary(config);
     }
 
     public void onLoadMore(View view){
@@ -73,6 +89,41 @@ public class PhotosActivity extends AppCompatActivity {
     }
 
     public void onBackup(View view){
+
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Please wait...");
+
+        Photo photo;
+
+        final List<String> selectedPhotos = new ArrayList<>();
+        boolean onStart = true;
+
+        for (int position = 0; position < photos.size(); position++){
+            photo = photos.get(position);
+
+            if (photo.isChecked()){
+                Log.e("ANAS", position + ". Selected Photo State: " + photo.isChecked() + "  " + photo.getUrl());
+                if (onStart){
+                    progressDialog.show();
+                    onStart = false;
+                }
+                selectedPhotos.add(photo.getUrl());
+            }
+        }
+
+        File file = new File(selectedPhotos.get(0));
+
+        try{
+            Log.e("CLOUDINARY ANAS", selectedPhotos.get(0));
+            cloudinary.uploader().upload("http://i.imgur.com/R1A3xde.png", ObjectUtils.asMap("resource_type", "image"));
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e("CLOUDINARY ANAS", e.getMessage());
+        }
+
+
+        progressDialog.dismiss();
 
     }
 

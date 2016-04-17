@@ -23,14 +23,14 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.2.1'
-
     /*Facebook SDK*/
     compile 'com.facebook.android:facebook-android-sdk:4.+'
-
     /*Picasso*/
     compile 'com.squareup.picasso:picasso:2.5.2'
-
+    /*Cloudinary*/
+    compile files('libs/cloudinary-core-1.2.2.jar')
+    compile files('libs/cloudinary-android-1.2.2.jar')
 }

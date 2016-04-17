@@ -16,6 +16,10 @@
             android:name="com.facebook.sdk.ApplicationId"
             android:value="@string/facebook_app_id"/>
 
+        <meta-data
+            android:name="CLOUDINARY_URL"
+            android:value="cloudinary://535846596164154:gMZRqFsTySrrFEX4o-dYMJt8p3o@dc0x6smxj"/>
+
         <activity android:name=".ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

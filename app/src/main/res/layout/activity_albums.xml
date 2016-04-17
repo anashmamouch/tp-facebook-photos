@@ -17,15 +17,6 @@
         android:background="@color/colorPrimaryDark"/>
 
 
-    <TextView
-        android:id="@+id/details"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:gravity="center"
-        android:layout_below="@id/toolbar_albums"
-        android:padding="8dp"/>
-
     <GridView
         android:id="@+id/gridView"
         android:layout_width="match_parent"
@@ -39,7 +30,19 @@
         android:focusable="true"
         android:clickable="true"
         android:padding="8dp"
-        android:layout_below="@+id/details">
+        android:layout_below="@+id/toolbar_albums"
+        android:layout_above="@+id/load_more_button">
     </GridView>
+
+    <Button
+        android:id="@+id/load_more_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/backup_button"
+        android:layout_alignParentBottom="true"
+        android:background="@color/colorPrimaryDark"
+        android:text="load more"
+        android:textColor="#FFF"
+        android:onClick="onLoadMore"/>
 
 </RelativeLayout>

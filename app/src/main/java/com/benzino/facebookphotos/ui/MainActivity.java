@@ -9,11 +9,13 @@ import android.util.Log;
 import com.benzino.facebookphotos.R;
 import com.benzino.facebookphotos.model.Album;
 import com.facebook.AccessToken;
+import com.facebook.AccessTokenTracker;
 import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.Profile;
 import com.facebook.ProfileTracker;
+import com.facebook.login.LoginFragment;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 
@@ -24,6 +26,10 @@ public class MainActivity extends AppCompatActivity {
     private CallbackManager callbackManager;
     private LoginButton loginButton;
 
+    private String name;
+    private AccessTokenTracker accessTokenTracker;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,12 +37,21 @@ public class MainActivity extends AppCompatActivity {
 
         callbackManager = CallbackManager.Factory.create();
 
-        //updateWithToken(AccessToken.getCurrentAccessToken());
+        updateWithToken(AccessToken.getCurrentAccessToken());
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         setTitle(R.string.app_name);
+
+//        accessTokenTracker = new AccessTokenTracker() {
+//            @Override
+//            protected void onCurrentAccessTokenChanged(AccessToken oldAccessToken, AccessToken newAccessToken) {
+//                updateWithToken(newAccessToken);
+//            }
+//        };
+        
+        
 
         loginButton = (LoginButton) findViewById(R.id.login_button);
 
@@ -44,34 +59,11 @@ public class MainActivity extends AppCompatActivity {
 
         loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
 
-            private ProfileTracker profileTracker;
 
             @Override
             public void onSuccess(LoginResult loginResult) {
-                AccessToken accessToken = loginResult.getAccessToken();
-                Profile profile;
-
-                if(Profile.getCurrentProfile() == null) {
-                    profileTracker = new ProfileTracker() {
-                        @Override
-                        protected void onCurrentProfileChanged(Profile profile, Profile profile2) {
-                            // profile2 is the new profile
-                            Log.v("ANAS", profile2.getFirstName());
-                            Intent intent = new Intent(MainActivity.this, AlbumsActivity.class);
-                            intent.putExtra("NAME", profile2.getName());
-                            intent.putExtra("FIRST NAME", profile2.getFirstName());
-                            startActivity(intent);
-                            profileTracker.stopTracking();
-                        }
-                    };
-                    profileTracker.startTracking();
-                }
-                else {
-                    profile = Profile.getCurrentProfile();
-                    Log.v("ANAS", profile.getFirstName());
-                }
-
-                Log.d("ANAS", "Login Succeded");
+                startActivity(new Intent(MainActivity.this, AlbumsActivity.class));
+                finish();
             }
 
             @Override
@@ -98,8 +90,9 @@ public class MainActivity extends AppCompatActivity {
         if (currentAccessToken != null){
             startActivity(new Intent(MainActivity.this, AlbumsActivity.class));
             finish();
+            Log.e("ANAS", "current Access Token");
         }else {
-
+            Log.e("ANAS", "1 2 3 let's go");
         }
     }
 }

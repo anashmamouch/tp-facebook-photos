@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
 import android.widget.GridView;
 import android.widget.TextView;
 
@@ -18,6 +19,7 @@ import com.facebook.HttpMethod;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +41,8 @@ public class AlbumsActivity extends AppCompatActivity {
 
     private Toolbar toolbar;
 
+    final String[] afterString = {""};  // will contain the next page cursor
+
     private String albumId;
 
     @Override
@@ -48,28 +52,25 @@ public class AlbumsActivity extends AppCompatActivity {
 
         initializeScreen();
 
-        getAlbumsFB();
+        loadAlbums(false);
     }
 
     private void initializeScreen(){
         albums = new ArrayList<>();
 
         toolbar = (Toolbar) findViewById(R.id.toolbar_albums);
-        details = (TextView) findViewById(R.id.details);
         gridView = (GridView) findViewById(R.id.gridView);
 
-        String name = getIntent().getStringExtra("NAME");
-        String firstName = getIntent().getStringExtra("FIRST NAME");
-
         setSupportActionBar(toolbar);
-        setTitle(firstName + "'s Albums");
+        setTitle("Albums");
 
-        details.setText("Welcome " + name);
     }
 
-    private void getAlbumsFB(){
+    public void loadAlbums(final boolean loadMore){
         Bundle parameters = new Bundle();
         parameters.putString("fields", "id,name,picture.type(album)");
+        parameters.putString("limit", "14");
+        parameters.putString("after", afterString[0]);
 
         /* make the API call */
         new GraphRequest(
@@ -79,6 +80,8 @@ public class AlbumsActivity extends AppCompatActivity {
                 HttpMethod.GET,
                 new GraphRequest.Callback() {
                     public void onCompleted(GraphResponse response) {
+
+                        JSONObject jsonObject = response.getJSONObject();
                         /* handle the result */
                         try {
                             JSONArray data =  response.getJSONObject().getJSONArray("data");
@@ -97,8 +100,21 @@ public class AlbumsActivity extends AppCompatActivity {
                                 Log.d("ANAS", albums.get(i).getTitle());
                             }
 
-                            gridViewAdapter = new AlbumGridViewAdapter(AlbumsActivity.this, R.layout.album_grid_item, albums);
-                            gridView.setAdapter(gridViewAdapter);
+                            if(loadMore){
+                                gridViewAdapter.notifyDataSetChanged();
+                            }else{
+                                gridViewAdapter = new AlbumGridViewAdapter(AlbumsActivity.this, R.layout.album_grid_item, albums);
+                                gridView.setAdapter(gridViewAdapter);
+                            }
+
+                            if(!jsonObject.isNull("paging")){
+
+                                JSONObject cursors = jsonObject.getJSONObject("paging").getJSONObject("cursors");
+
+                                if(!cursors.isNull("after")){
+                                    afterString[0] = cursors.getString("after");
+                                }
+                            }
 
                             Log.d("ANAS", data.toString());
 
@@ -109,6 +125,10 @@ public class AlbumsActivity extends AppCompatActivity {
                 }
         ).executeAsync();
 
+    }
+
+    public void onLoadMore(View view){
+        loadAlbums(true);
     }
 
 }
