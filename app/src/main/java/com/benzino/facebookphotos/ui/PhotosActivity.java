@@ -1,35 +1,57 @@
 package com.benzino.facebookphotos.ui;
 
 import android.app.ProgressDialog;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.GridView;
 
+import com.backendless.BackendlessUser;
+import com.backendless.async.callback.AsyncCallback;
+import com.backendless.async.callback.BackendlessCallback;
+import com.backendless.exceptions.BackendlessFault;
+import com.backendless.files.BackendlessFile;
 import com.benzino.facebookphotos.R;
 import com.benzino.facebookphotos.adapters.AlbumGridViewAdapter;
 import com.benzino.facebookphotos.adapters.PhotoGridViewAdapter;
 import com.benzino.facebookphotos.model.Photo;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.dropbox.client2.DropboxAPI;
+import com.dropbox.client2.android.AndroidAuthSession;
+import com.dropbox.client2.exception.DropboxException;
+import com.dropbox.client2.session.AppKeyPair;
 import com.facebook.AccessToken;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 import com.facebook.HttpMethod;
+import com.facebook.login.LoginManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.backendless.Backendless;
 
 /**
  * Created on 16/4/16.
@@ -37,6 +59,16 @@ import java.util.Map;
  * @author Anas
  */
 public class PhotosActivity extends AppCompatActivity {
+
+    final static private String APP_KEY = "9ur9oezu0zpjd19";
+    final static private String APP_SECRET = "01knf4h7uk5iu3n";
+
+    final static private String APP_ID = "1A759847-411E-E60A-FF08-B375408FC000";
+    final static private String APP_ANDROID_KEY = "99F52FD1-E028-A455-FF32-5829C9447900";
+
+
+
+    private DropboxAPI<AndroidAuthSession> mDBApi;
 
     String albumId;
 
@@ -62,7 +94,34 @@ public class PhotosActivity extends AppCompatActivity {
         Log.e("ANAS", "PHOTO ACTIVITY");
     }
 
+
+
     public void initializeData(){
+
+        /*Initialize Dropbox API*/
+        AppKeyPair appKeys = new AppKeyPair(APP_KEY, APP_SECRET);
+        AndroidAuthSession session = new AndroidAuthSession(appKeys);
+        mDBApi = new DropboxAPI<AndroidAuthSession>(session);
+
+        String appVersion = "v1";
+
+        /*Initialize Backendless*/
+        Backendless.initApp(this, APP_ID, APP_ANDROID_KEY, appVersion );
+
+        /*test Backendless*/
+//        BackendlessUser user = new BackendlessUser();
+//        user.setEmail( "benzinoanas@gmail.com" );
+//        user.setPassword( "my_super_password" );
+//
+//        Backendless.UserService.register( user, new BackendlessCallback<BackendlessUser>()
+//        {
+//            @Override
+//            public void handleResponse( BackendlessUser backendlessUser )
+//            {
+//                Log.i( "Registration", backendlessUser.getEmail() + " successfully registered" );
+//            }
+//        } );
+
         albumId = getIntent().getStringExtra("ALBUM ID");
 
         gridView = (GridView) findViewById(R.id.gridView_photos);
@@ -74,18 +133,11 @@ public class PhotosActivity extends AppCompatActivity {
 
         setTitle(getIntent().getStringExtra("ALBUM NAME"));
 
-        /*Cloudinary configuration*/
-
-
-        Map config = new HashMap();
-        config.put("cloud_name", "dc0x6smxj");
-        config.put("api_key", "535846596164154");
-        config.put("api_secret", "gMZRqFsTySrrFEX4o-dYMJt8p3o");
-        cloudinary = new Cloudinary(config);
     }
 
     public void onLoadMore(View view){
        loadData(true);
+
     }
 
     public void onBackup(View view){
@@ -111,20 +163,25 @@ public class PhotosActivity extends AppCompatActivity {
                 selectedPhotos.add(photo.getUrl());
             }
         }
+        FileInputStream inputStream = null;
+        DropboxAPI.Entry response = null;
 
-        File file = new File(selectedPhotos.get(0));
+        try {
+            URL url = new URL(selectedPhotos.get(0));
+            URLConnection conn = url.openConnection();
+            conn.connect();
+            //inputStream = (FileInputStream) conn.getInputStream();
 
-        try{
-            Log.e("CLOUDINARY ANAS", selectedPhotos.get(0));
-            cloudinary.uploader().upload("http://i.imgur.com/R1A3xde.png", ObjectUtils.asMap("resource_type", "image"));
-        } catch (IOException e) {
+            File file = new File(new URL(selectedPhotos.get(0)).toURI());
+            inputStream = new FileInputStream(file);
+            response = mDBApi.putFile("/facebook-photo", inputStream, 0, null, null);
+        } catch (Exception e) {
             e.printStackTrace();
-            Log.e("CLOUDINARY ANAS", e.getMessage());
         }
 
+        Log.i("ANAS DROPBOX", "The uploaded file's rev is: " + response.rev);
 
         progressDialog.dismiss();
-
     }
 
     public void loadData(final boolean loadMore){
@@ -184,5 +241,48 @@ public class PhotosActivity extends AppCompatActivity {
                     }
                 }
         ).executeAsync();
+    }
+
+    public void logout(){
+        LoginManager.getInstance().logOut();
+        finish();
+    }
+
+    protected void onResume() {
+        super.onResume();
+
+        if (mDBApi.getSession().authenticationSuccessful()) {
+            try {
+                // Required to complete auth, sets the access token on the session
+                mDBApi.getSession().finishAuthentication();
+
+                String accessToken = mDBApi.getSession().getOAuth2AccessToken();
+            } catch (IllegalStateException e) {
+                Log.i("DbAuthLog", "Error authenticating", e);
+            }
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            logout();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }
