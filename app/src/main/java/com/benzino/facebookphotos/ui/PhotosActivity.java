@@ -3,7 +3,10 @@ package com.benzino.facebookphotos.ui;
 import android.app.ProgressDialog;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -47,11 +50,14 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.backendless.Backendless;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 /**
  * Created on 16/4/16.
@@ -133,6 +139,8 @@ public class PhotosActivity extends AppCompatActivity {
 
         setTitle(getIntent().getStringExtra("ALBUM NAME"));
 
+        mDBApi.getSession().startOAuth2Authentication(PhotosActivity.this);
+
     }
 
     public void onLoadMore(View view){
@@ -163,23 +171,57 @@ public class PhotosActivity extends AppCompatActivity {
                 selectedPhotos.add(photo.getUrl());
             }
         }
-        FileInputStream inputStream = null;
-        DropboxAPI.Entry response = null;
 
-        try {
-            URL url = new URL(selectedPhotos.get(0));
-            URLConnection conn = url.openConnection();
-            conn.connect();
-            //inputStream = (FileInputStream) conn.getInputStream();
+        for(int i = 0; i < selectedPhotos.size(); i++){
 
-            File file = new File(new URL(selectedPhotos.get(0)).toURI());
-            inputStream = new FileInputStream(file);
-            response = mDBApi.putFile("/facebook-photo", inputStream, 0, null, null);
-        } catch (Exception e) {
-            e.printStackTrace();
+            final int finalI = i;
+            Picasso.with(getApplicationContext()).load(selectedPhotos.get(i)).into(new Target() {
+                @Override
+                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                    try {
+                        String root = Environment.getExternalStorageDirectory().toString();
+                        File myDir = new File(root + "/myFBPhotos");
+                        if (!myDir.exists()) {
+                            myDir.mkdirs();
+                        }
+                        final String name = System.currentTimeMillis() + ".jpg";
+                        final File image = new File(myDir, name);
+                        FileOutputStream out = new FileOutputStream(image);
+                        final FileInputStream inputStream = new FileInputStream(image);
+
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    DropboxAPI.Entry response = mDBApi.putFile("/"+name, inputStream,
+                                            image.length(), null, null);
+                                    Log.e("ANAS UPLOAD", finalI +  " . The uploaded file's rev is: " + response.rev);
+                                } catch (DropboxException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }).start();
+
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+                        out.flush();
+                        out.close();
+                    } catch(Exception e){
+                        e.printStackTrace();
+                        //Log.e("ANASERROR", e.getMessage());
+                    }
+                }
+
+                @Override
+                public void onBitmapFailed(Drawable errorDrawable) {
+
+                }
+
+                @Override
+                public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                }
+            });
         }
-
-        Log.i("ANAS DROPBOX", "The uploaded file's rev is: " + response.rev);
 
         progressDialog.dismiss();
     }
@@ -284,5 +326,112 @@ public class PhotosActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public class UploadTask extends AsyncTask<Void, Void, Void>{
+
+        public UploadTask(){
+//            progressDialog = new ProgressDialog(PhotosActivity.this);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+//            progressDialog.setCancelable(false);
+//            progressDialog.setMessage("Please wait...");
+//            progressDialog.show();
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            Photo photo;
+
+            final List<String> selectedPhotos = new ArrayList<>();
+            boolean onStart = true;
+
+            for (int position = 0; position < photos.size(); position++){
+                photo = photos.get(position);
+
+                if (photo.isChecked()){
+                    Log.e("ANAS", position + ". Selected Photo State: " + photo.isChecked() + "  " + photo.getUrl());
+                    if (onStart){
+                        //progressDialog.show();
+                        onStart = false;
+                    }
+                    selectedPhotos.add(photo.getUrl());
+                }
+            }
+
+            for(int i = 0; i < selectedPhotos.size(); i++){
+
+                final int finalI = i;
+                Picasso.with(getApplicationContext()).load(selectedPhotos.get(i)).into(new Target() {
+                    @Override
+                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                        try {
+                            String root = Environment.getExternalStorageDirectory().toString();
+                            File myDir = new File(root + "/yourDirectory");
+                            if (!myDir.exists()) {
+                                myDir.mkdirs();
+                            }
+                            final String name = System.currentTimeMillis() + ".jpg";
+                            final File image = new File(myDir, name);
+                            FileOutputStream out = new FileOutputStream(image);
+                            final FileInputStream inputStream = new FileInputStream(image);
+
+//                            runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+                                    try {
+                                        DropboxAPI.Entry response = mDBApi.putFile("/"+name, inputStream,
+                                                image.length(), null, null);
+                                        Log.e("ANAS UPLOAD", finalI +  " . The uploaded file's rev is: " + response.rev);
+                                    } catch (DropboxException e) {
+                                        e.printStackTrace();
+                                    }
+//                                }
+//                            });
+
+//                        new Thread(new Runnable() {
+//                            public void run() {
+//                                try {
+//                                    DropboxAPI.Entry response = mDBApi.putFile("/"+name, inputStream,
+//                                            image.length(), null, null);
+//                                    Log.e("ANAS UPLOAD", finalI +  " . The uploaded file's rev is: " + response.rev);
+//                                } catch (DropboxException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                        }).start();
+
+
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+                            out.flush();
+                            out.close();
+                        } catch(Exception e){
+                            e.printStackTrace();
+                            //Log.e("ANASERROR", e.getMessage());
+                        }
+                    }
+
+                    @Override
+                    public void onBitmapFailed(Drawable errorDrawable) {
+
+                    }
+
+                    @Override
+                    public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                    }
+                });
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+//            progressDialog.dismiss();
+        }
     }
 }
